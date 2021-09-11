@@ -1,0 +1,19 @@
+{
+    "name": "mohamedhk2/php-patcher",
+    "homepage": "https://github.com/mohamedhk2/php-patcher",
+    "authors": [
+        {
+            "name": "mohamedhk2",
+            "email": "mohamedhk2@yahoo.fr"
+        }
+    ],
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Mohamedhk2\\PhpPatcher\\": "src/"
+        }
+    },
+    "require-dev": {
+        "symfony/var-dumper": "^5.3"
+    }
+}
