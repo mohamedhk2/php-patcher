@@ -32,7 +32,16 @@ final class Patcher
      */
     public function canModified()
     {
+        if (!$this->fileExist()) return false;
         return $this->preg_match();
+    }
+
+    /**
+     * @return bool
+     */
+    public function fileExist()
+    {
+        return file_exists($this->file_path);
     }
 
     /**
@@ -50,7 +59,7 @@ final class Patcher
      */
     protected function file_content()
     {
-        return file_get_contents($this->file_path);
+        return $this->fileExist() ? file_get_contents($this->file_path) : false;
     }
 
     /**
@@ -95,17 +104,9 @@ final class Patcher
     /**
      * @return bool
      */
-    public function fileExist()
-    {
-        return file_exists($this->file_path);
-    }
-
-    /**
-     * @return bool
-     */
     public function isModified()
     {
-        if (empty($this->check)) return false;
+        if (empty($this->check) || !$this->fileExist()) return false;
         return !!preg_match($this->check, $this->file_content(), $matches);
     }
 
