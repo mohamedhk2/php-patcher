@@ -63,9 +63,12 @@ final class Patcher
     }
 
     /**
+     * @param null $backup_full_path
+     *
+     * @return array|false|string|string[]
      * @throws \Exception
      */
-    public function makeChange($backup = null)
+    public function makeChange($backup_full_path = null)
     {
         if (!$this->fileExist()) {
             self::$status = self::STATUS_FILE_NOT_FOUND;
@@ -95,9 +98,9 @@ final class Patcher
                 throw new \Exception('Invalid type');
                 break;
         }
-        $new_content = str_replace($search, $output, $this->file_content());
+        $new_content = str_replace($search, $output, $content = $this->file_content());
         self::$status = self::STATUS_SUCCESSFUL;
-        if ($backup && !is_file($backup) && !is_dir($backup)) file_put_contents($backup, $new_content);
+        if ($backup_full_path && !is_file($backup_full_path) && !is_dir($backup_full_path)) file_put_contents($backup_full_path, $content);
         return $new_content;
     }
 
