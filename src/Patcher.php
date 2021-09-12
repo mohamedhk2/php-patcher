@@ -41,7 +41,7 @@ final class Patcher
      */
     public function fileExist()
     {
-        return file_exists($this->file_path);
+        return file_exists($this->file_path) && is_file($this->file_path);
     }
 
     /**
