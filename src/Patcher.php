@@ -100,7 +100,7 @@ final class Patcher
         }
         $new_content = str_replace($search, $output, $content = $this->file_content());
         self::$status = self::STATUS_SUCCESSFUL;
-        if ($backup_full_path && !is_file($backup_full_path) && !is_dir($backup_full_path)) file_put_contents($backup_full_path, $content);
+        if ($backup_full_path && !is_file($backup_full_path) && !is_dir($backup_full_path) && !empty($content)) file_put_contents($backup_full_path, $content);
         return $new_content;
     }
 
