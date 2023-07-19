@@ -2,6 +2,8 @@
 
 namespace Mohamedhk2\PhpPatcher;
 
+use Exception;
+
 final class Patcher
 {
     const STATUS_CAN_MODIFIED = 104;
@@ -30,7 +32,7 @@ final class Patcher
     /**
      * @return bool
      */
-    public function canModified()
+    public function canModified(): bool
     {
         if (!$this->fileExist()) return false;
         return $this->preg_match();
@@ -39,19 +41,22 @@ final class Patcher
     /**
      * @return bool
      */
-    public function fileExist()
+    public function fileExist(): bool
     {
         return file_exists($this->file_path) && is_file($this->file_path);
     }
 
     /**
      * @param array $matches
-     *
+     * @param bool $all
      * @return bool
      */
-    protected function preg_match(&$matches = [])
+    protected function preg_match(&$matches = [], bool $all = false): bool
     {
-        return !!preg_match($this->search, $this->file_content(), $matches);
+        if ($all)
+            return !!preg_match_all($this->search, $this->file_content(), $matches);
+        else
+            return !!preg_match($this->search, $this->file_content(), $matches);
     }
 
     /**
@@ -66,15 +71,15 @@ final class Patcher
      * @param null $backup_full_path
      *
      * @return array|false|string|string[]
-     * @throws \Exception
+     * @throws Exception
      */
-    public function makeChange($backup_full_path = null)
+    public function makeChange($backup_full_path = null, bool $multiple = false)
     {
         if (!$this->fileExist()) {
             self::$status = self::STATUS_FILE_NOT_FOUND;
             return false;
         }
-        if (!$this->preg_match($matches)) {
+        if (!$this->preg_match($matches, $multiple)) {
             self::$status = self::STATUS_NOT_SUPPORTED;
             return false;
         }
@@ -82,44 +87,50 @@ final class Patcher
             self::$status = self::STATUS_MODIFIED;
             return false;
         }
+        $content = $this->file_content();
         $search = $matches[0];
         $eol = PHP_EOL;
-        switch ($this->type) {
-            case self::TYPE_REPLACE:
-                $output = $this->replace;
-                break;
-            case self::TYPE_AFTER :
-                $output = "{$search}{$eol}{$this->replace}{$eol}";
-                break;
-            case self::TYPE_BEFORE :
-                $output = "{$eol}{$this->replace}{$eol}{$search}";
-                break;
-            default:
-                throw new \Exception('Invalid type');
-                break;
+        $new_content = $content;
+        foreach ((array)$search as $match) {
+            switch ($this->type) {
+                case self::TYPE_REPLACE:
+                    $output = $this->replace;
+                    break;
+                case self::TYPE_AFTER :
+                    $output = "$match$eol$this->replace$eol";
+                    break;
+                case self::TYPE_BEFORE :
+                    $output = "$eol$this->replace$eol$match";
+                    break;
+                default:
+                    throw new Exception('Invalid type');
+            }
+            $new_content = str_replace($match, $output, $new_content);
         }
-        $new_content = str_replace($search, $output, $content = $this->file_content());
         self::$status = self::STATUS_SUCCESSFUL;
-        if ($backup_full_path && !is_file($backup_full_path) && !is_dir($backup_full_path) && !empty($content)) file_put_contents($backup_full_path, $content);
+        if ($backup_full_path && !is_file($backup_full_path) && !is_dir($backup_full_path) && !empty($content)) {
+            file_put_contents($backup_full_path, $content);
+        }
+
         return $new_content;
     }
 
     /**
      * @return bool
      */
-    public function isModified()
+    public function isModified(): bool
     {
         if (empty($this->check) || !$this->fileExist()) return false;
-        return !!preg_match($this->check, $this->file_content(), $matches);
+        return !!preg_match($this->check, $this->file_content());
     }
 
     /**
      * @param string $search
      *
      * @return $this
-     * @throws \Exception
+     * @throws Exception
      */
-    public function setAfter(string $search)
+    public function setAfter(string $search): Patcher
     {
         $this->set_replace($search, self::TYPE_AFTER);
         return $this;
@@ -129,7 +140,7 @@ final class Patcher
      * @param string $replace
      * @param $type
      *
-     * @throws \Exception
+     * @throws Exception
      */
     protected function set_replace(string $replace, $type)
     {
@@ -142,8 +153,7 @@ final class Patcher
                 self::$status = 0;
                 break;
             default:
-                throw new \Exception('Invalid type');
-                break;
+                throw new Exception('Invalid type');
         }
     }
 
@@ -151,9 +161,9 @@ final class Patcher
      * @param string $search
      *
      * @return $this
-     * @throws \Exception
+     * @throws Exception
      */
-    public function setReplace(string $search)
+    public function setReplace(string $search): Patcher
     {
         $this->set_replace($search, self::TYPE_REPLACE);
         return $this;
@@ -163,9 +173,9 @@ final class Patcher
      * @param string $search
      *
      * @return $this
-     * @throws \Exception
+     * @throws Exception
      */
-    public function setBefore(string $search)
+    public function setBefore(string $search): Patcher
     {
         $this->set_replace($search, self::TYPE_BEFORE);
         return $this;
@@ -176,7 +186,7 @@ final class Patcher
      *
      * @return self
      */
-    public function setCheck(string $check)
+    public function setCheck(string $check): Patcher
     {
         $this->check = $check;
         return $this;
@@ -187,7 +197,7 @@ final class Patcher
      *
      * @return self
      */
-    public function setSearch(string $search)
+    public function setSearch(string $search): Patcher
     {
         $this->search = $search;
         self::$status = 0;
