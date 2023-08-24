@@ -14,12 +14,14 @@ final class Patcher
     const TYPE_AFTER = 2;
     const TYPE_BEFORE = 3;
     const TYPE_REPLACE = 1;
+    const CHECK_NOT = '__NOT__';
     public static $status = 0;
     protected $check;
     protected $file_path;
     protected $replace;
     protected $search;
     protected $type = self::TYPE_REPLACE;
+    protected $eol = PHP_EOL;
 
     /**
      * @param $file_path
@@ -27,6 +29,22 @@ final class Patcher
     public function __construct($file_path)
     {
         $this->file_path = $file_path;
+    }
+
+    public function getEol(): string
+    {
+        return $this->eol;
+    }
+
+    public function setEol(?string $eol): void
+    {
+        $this->eol = $eol;
+    }
+
+    public function resetEol(): Patcher
+    {
+        $this->eol = PHP_EOL;
+        return $this;
     }
 
     /**
@@ -47,11 +65,11 @@ final class Patcher
     }
 
     /**
-     * @param array $matches
+     * @param array|null $matches
      * @param bool $all
      * @return bool
      */
-    protected function preg_match(&$matches = [], bool $all = false): bool
+    protected function preg_match(?array &$matches = [], bool $all = false): bool
     {
         if ($all)
             return !!preg_match_all($this->search, $this->file_content(), $matches);
@@ -89,7 +107,7 @@ final class Patcher
         }
         $content = $this->file_content();
         $search = $matches[0];
-        $eol = PHP_EOL;
+        $this->eol = PHP_EOL;
         $new_content = $content;
         foreach ((array)$search as $match) {
             switch ($this->type) {
@@ -97,10 +115,10 @@ final class Patcher
                     $output = $this->replace;
                     break;
                 case self::TYPE_AFTER :
-                    $output = "$match$eol$this->replace$eol";
+                    $output = $match . $this->eol . $this->replace . $this->eol;
                     break;
                 case self::TYPE_BEFORE :
-                    $output = "$eol$this->replace$eol$match";
+                    $output = $this->eol . $this->replace . $this->eol . $match;
                     break;
                 default:
                     throw new Exception('Invalid type');
@@ -111,7 +129,6 @@ final class Patcher
         if ($backup_full_path && !is_file($backup_full_path) && !is_dir($backup_full_path) && !empty($content)) {
             file_put_contents($backup_full_path, $content);
         }
-
         return $new_content;
     }
 
@@ -121,7 +138,17 @@ final class Patcher
     public function isModified(): bool
     {
         if (empty($this->check) || !$this->fileExist()) return false;
+        if ($this->check === self::CHECK_NOT)
+            return !preg_match($this->search, $this->file_content());
         return !!preg_match($this->check, $this->file_content());
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSuccessful(): bool
+    {
+        return self::$status === self::STATUS_SUCCESSFUL;
     }
 
     /**
