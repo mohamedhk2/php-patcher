@@ -36,9 +36,10 @@ final class Patcher
         return $this->eol;
     }
 
-    public function setEol(?string $eol): void
+    public function setEol(?string $eol): Patcher
     {
         $this->eol = $eol;
+        return $this;
     }
 
     public function resetEol(): Patcher
@@ -107,7 +108,6 @@ final class Patcher
         }
         $content = $this->file_content();
         $search = $matches[0];
-        $this->eol = PHP_EOL;
         $new_content = $content;
         foreach ((array)$search as $match) {
             switch ($this->type) {
